@@ -8,7 +8,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS damit das Frontend die API aufrufen kann
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,5 +18,6 @@ app.add_middleware(
 app.include_router(stops.router, prefix="/api")
 
 @app.get("/")
+@app.head("/")
 def root():
     return {"message": "Bus Stop Accessibility API", "docs": "/docs"}
