@@ -8,3 +8,4 @@ osmnx
 shapely
 pandas
 python-dotenv
+aiofiles
