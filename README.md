@@ -1,6 +1,6 @@
 # Bus Stop Accessibility Analyzer
 
-A full-stack geospatial web application that analyzes public bus stop coverage in Frankfurt am Main using real OpenStreetMap data, PostGIS spatial queries, and an interactive Leaflet map.
+A full-stack geospatial web application that analyzes public bus stop accessibility in Frankfurt am Main using **network-based walking distance** — not simple radius buffers. Built with real OpenStreetMap data, PostGIS spatial queries, FastAPI and an interactive Leaflet map.
 
 ![Dashboard Preview](img/bus-access.png)
 
@@ -8,19 +8,33 @@ A full-stack geospatial web application that analyzes public bus stop coverage i
 
 ## Motivation
 
-Urban mobility planning depends on understanding how well neighborhoods are served by public transport. This tool automatically identifies coverage gaps — areas where residents live more than 300m from the nearest bus stop — directly applicable to smart city, urban planning, and mobility GIS workflows.
+Urban mobility planning depends on understanding how well neighborhoods are served by public transport. Simple radius buffers ignore streets, buildings and real walking paths. This tool uses the **actual pedestrian street network** to calculate reachable bus stops — directly applicable to smart city, urban planning, and mobility GIS workflows.
 
 ---
 
 ## Features
 
-- Automated OSM data retrieval for bus stops and district boundaries
-- 300m coverage buffer analysis per stop using PostGIS geography functions
-- Coverage gap detection via `ST_Difference` between district boundaries and coverage area
+- Address geocoding → coordinates via osmnx
+- **Network-based walking distance** using real pedestrian street network (not simple buffers)
+- **Isochrone generation** — polygon showing the actual reachable area on foot
+- Bus stops sorted by real walking distance in sidebar
+- Click on stop in sidebar → map flies to location
 - REST API serving GeoJSON endpoints with FastAPI
-- Interactive Leaflet map with layer toggles and district filtering
 - Fully containerized PostGIS database via Docker
+- Cloud deployment: Render (API) + Supabase (PostGIS)
 - Reproducible environment via conda
+
+---
+
+## Network-based vs. Simple Buffer
+
+| | Simple Buffer | Network-based (this project) |
+|---|---|---|
+| Method | Circle around stop | Actual street graph |
+| Accuracy | Low | High |
+| Considers streets | ❌ | ✅ |
+| Considers obstacles | ❌ | ✅ |
+| Industry standard | No | Yes |
 
 ---
 
@@ -28,10 +42,12 @@ Urban mobility planning depends on understanding how well neighborhoods are serv
 
 | Layer | Tool |
 |---|---|
-| Database | PostgreSQL + PostGIS (Docker) |
+| Database | PostgreSQL + PostGIS (Docker / Supabase) |
 | ETL | osmnx · GeoPandas · Python |
-| API | FastAPI · GeoAlchemy2 · SQLAlchemy |
+| Network Analysis | osmnx · NetworkX |
+| API | FastAPI · SQLAlchemy |
 | Frontend | Leaflet.js · HTML/CSS |
+| Deployment | Render (API) · Supabase (DB) |
 | Environment | conda · Docker Compose |
 
 ---
@@ -43,12 +59,25 @@ OpenStreetMap (OSM)
         ↓
 ETL Pipeline (osmnx + GeoPandas)
         ↓
-PostGIS Database (Docker)
+PostGIS Database (Supabase)
         ↓
-FastAPI REST API
+FastAPI REST API (Render)
         ↓
 Leaflet Frontend (Browser)
 ```
+
+---
+
+## How It Works
+
+1. User enters an address and walking radius (e.g. 300m)
+2. Address is geocoded to coordinates via osmnx
+3. Pedestrian street network is loaded around the point
+4. NetworkX calculates all nodes reachable within the radius
+5. Bus stops within the reachable area are fetched from PostGIS
+6. Each stop's actual walking distance is computed via shortest path
+7. Isochrone polygon is generated from reachable network nodes
+8. Results displayed on map + sorted list in sidebar
 
 ---
 
@@ -56,36 +85,14 @@ Leaflet Frontend (Browser)
 
 | Endpoint | Description |
 |---|---|
+| `GET /api/search?address=Zeil+1+Frankfurt&radius=300` | Network-based stop search |
 | `GET /api/stops` | All bus stops as GeoJSON |
 | `GET /api/stops?district=Bockenheim` | Filtered by district |
 | `GET /api/coverage?radius=300` | Union of all stop buffers |
 | `GET /api/gaps?radius=300` | Areas without bus coverage |
 | `GET /api/stats` | Stop count per district |
 
-Interactive API docs available at `http://localhost:8000/docs`
-
----
-
-## Coverage Analysis
-
-For each bus stop a 300m buffer is calculated using PostGIS geography functions. The coverage gap is the spatial difference between the real district boundaries (from OSM) and the union of all coverage areas:
-
-```sql
-ST_Difference(district_boundary, ST_Union(ST_Buffer(geometry::geography, 300)))
-```
-
-Red areas on the map indicate zones where residents are more than 300m from any bus stop.
-
----
-
-## Districts Covered
-
-- Bockenheim
-- Nordend-West
-- Nordend-Ost
-- Westend-Nord
-- Westend-Süd
-- Ostend
+Interactive API docs: `https://bus-stop-accessibility.onrender.com/docs`
 
 ---
 
@@ -129,16 +136,18 @@ bus-stop-accessibility/
 ├── docker-compose.yml
 ├── requirements.txt
 ├── environment.yml
+├── Dockerfile
 ├── backend/
-│   ├── main.py          # FastAPI app
-│   ├── database.py      # DB connection
-│   ├── models.py        # Table definitions
+│   ├── main.py             # FastAPI app
+│   ├── database.py         # DB connection
+│   ├── models.py           # Table definitions
 │   ├── routes/
-│   │   └── stops.py     # API endpoints
+│   │   ├── stops.py        # Coverage & gap endpoints
+│   │   └── search.py       # Network-based search endpoint
 │   └── etl/
-│       └── load_data.py # OSM → PostGIS pipeline
+│       └── load_data.py    # OSM → PostGIS pipeline
 ├── frontend/
-│   └── index.html       # Leaflet map
+│   └── index.html          # Leaflet map
 └── img/
     └── bus-access.png
 ```
