@@ -19,7 +19,7 @@
   #sidebar h1 { font-size: 13px; color: #f1c40f; letter-spacing: 0.1em; text-transform: uppercase; }
   #sidebar h2 { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
 
-  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  .input-group { display: flex; flex-direction: column; gap: 6px; position: relative; }
   .input-group label { font-size: 11px; color: #aaa; }
   .input-group input {
     padding: 8px 10px; border-radius: 4px;
@@ -28,6 +28,30 @@
     transition: border 0.2s;
   }
   .input-group input:focus { border-color: #f1c40f; }
+
+  /* Autocomplete dropdown */
+  #autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: #34495e;
+    border: 1px solid #f1c40f;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    z-index: 9999;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .autocomplete-item {
+    padding: 8px 10px;
+    font-size: 11px;
+    color: #eee;
+    cursor: pointer;
+    border-bottom: 1px solid #4a6274;
+    line-height: 1.4;
+  }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover { background: #3d566e; color: #f1c40f; }
 
   .radius-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
   .radius-val { color: #f1c40f; font-weight: 700; font-size: 14px; }
@@ -77,7 +101,10 @@
     <h2>Search</h2>
     <div class="input-group">
       <label>Address in Frankfurt</label>
-      <input type="text" id="address-input" placeholder="e.g. Zeil 1, Frankfurt" value="Zeil 1, Frankfurt"/>
+      <input type="text" id="address-input"
+        placeholder="e.g. Zeil 1, Frankfurt"
+        autocomplete="off"/>
+      <div id="autocomplete-list" style="display:none;"></div>
     </div>
   </div>
 
@@ -127,19 +154,92 @@ L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
 let searchMarker = null;
 let stopsLayer = null;
 let isochroneLayer = null;
+let autocompleteTimeout = null;
+let selectedAddress = null;
 
 // Radius slider
 document.getElementById("radius-slider").addEventListener("input", function() {
   document.getElementById("radius-display").textContent = this.value;
 });
 
-// Enter key trigger
-document.getElementById("address-input").addEventListener("keypress", function(e) {
-  if (e.key === "Enter") runSearch();
+// Autocomplete
+const addressInput = document.getElementById("address-input");
+const autocompleteList = document.getElementById("autocomplete-list");
+
+addressInput.addEventListener("input", function() {
+  const query = this.value.trim();
+  clearTimeout(autocompleteTimeout);
+  selectedAddress = null;
+
+  if (query.length < 3) {
+    autocompleteList.style.display = "none";
+    return;
+  }
+
+  // Debounce — warte 400ms nach letztem Tastendruck
+  autocompleteTimeout = setTimeout(() => fetchSuggestions(query), 400);
+});
+
+async function fetchSuggestions(query) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?` +
+      `q=${encodeURIComponent(query + ", Frankfurt am Main")}&` +
+      `format=json&limit=5&countrycodes=de&` +
+      `viewbox=8.4,50.0,8.9,50.3&bounded=1`;
+
+    const res = await fetch(url, {
+      headers: { "Accept-Language": "de" }
+    });
+    const results = await res.json();
+
+    if (results.length === 0) {
+      autocompleteList.style.display = "none";
+      return;
+    }
+
+    autocompleteList.innerHTML = results.map((r, i) => `
+      <div class="autocomplete-item" data-index="${i}"
+           data-display="${r.display_name}"
+           data-name="${r.display_name}">
+        ${r.display_name}
+      </div>
+    `).join("");
+
+    autocompleteList.style.display = "block";
+
+    // Click on suggestion
+    autocompleteList.querySelectorAll(".autocomplete-item").forEach(item => {
+      item.addEventListener("click", function() {
+        const name = this.dataset.name;
+        addressInput.value = name;
+        selectedAddress = name;
+        autocompleteList.style.display = "none";
+        runSearch();
+      });
+    });
+
+  } catch (err) {
+    autocompleteList.style.display = "none";
+  }
+}
+
+// Close autocomplete when clicking outside
+document.addEventListener("click", function(e) {
+  if (!addressInput.contains(e.target) && !autocompleteList.contains(e.target)) {
+    autocompleteList.style.display = "none";
+  }
+});
+
+// Enter key
+addressInput.addEventListener("keypress", function(e) {
+  if (e.key === "Enter") {
+    autocompleteList.style.display = "none";
+    runSearch();
+  }
 });
 
 async function runSearch() {
-  const address = document.getElementById("address-input").value.trim();
+  const address = addressInput.value.trim();
   const radius = document.getElementById("radius-slider").value;
 
   if (!address) return;
@@ -149,6 +249,7 @@ async function runSearch() {
   btn.textContent = "Searching...";
   setStatus("Calculating network-based accessibility...", "loading");
   document.getElementById("results-section").style.display = "none";
+  autocompleteList.style.display = "none";
 
   try {
     const res = await fetch(`${API}/search?address=${encodeURIComponent(address)}&radius=${radius}`);
@@ -159,34 +260,21 @@ async function runSearch() {
       return;
     }
 
-    // Clear old layers
     if (searchMarker) map.removeLayer(searchMarker);
     if (stopsLayer) map.removeLayer(stopsLayer);
     if (isochroneLayer) map.removeLayer(isochroneLayer);
 
-    // Draw isochrone
     if (data.isochrone) {
       isochroneLayer = L.geoJSON(data.isochrone, {
-        style: {
-          fillColor: "#27ae60",
-          fillOpacity: 0.2,
-          color: "#27ae60",
-          weight: 2,
-        }
+        style: { fillColor: "#27ae60", fillOpacity: 0.2, color: "#27ae60", weight: 2 }
       }).addTo(map);
     }
 
-    // Draw search point
     searchMarker = L.circleMarker([data.search_point.lat, data.search_point.lon], {
-      radius: 10,
-      fillColor: "#3498db",
-      color: "#fff",
-      weight: 2,
-      fillOpacity: 1,
+      radius: 10, fillColor: "#3498db", color: "#fff", weight: 2, fillOpacity: 1,
     }).addTo(map);
     searchMarker.bindPopup(`<b>Search point</b><br>${address}`).openPopup();
 
-    // Draw bus stops
     const features = data.stops.map(stop => ({
       type: "Feature",
       geometry: stop.geometry,
@@ -196,35 +284,25 @@ async function runSearch() {
     stopsLayer = L.geoJSON({ type: "FeatureCollection", features }, {
       pointToLayer: (feature, latlng) =>
         L.circleMarker(latlng, {
-          radius: 7,
-          fillColor: "#f1c40f",
-          color: "#e67e22",
-          weight: 1.5,
-          fillOpacity: 0.9,
+          radius: 7, fillColor: "#f1c40f", color: "#e67e22",
+          weight: 1.5, fillOpacity: 0.9,
         }),
       onEachFeature: (feature, layer) => {
         const p = feature.properties;
-        layer.bindTooltip(
-          `<b>${p.name}</b><br>🚶 ${p.distance_m}m walking`,
-          { sticky: true }
-        );
+        layer.bindTooltip(`<b>${p.name}</b><br>🚶 ${p.distance_m}m walking`, { sticky: true });
       }
     }).addTo(map);
 
-    // Fit map to results
     if (data.stops.length > 0) {
-      const bounds = stopsLayer.getBounds().extend(searchMarker.getLatLng());
-      map.fitBounds(bounds, { padding: [40, 40] });
+      map.fitBounds(stopsLayer.getBounds().extend(searchMarker.getLatLng()), { padding: [40, 40] });
     } else {
       map.setView([data.search_point.lat, data.search_point.lon], 15);
     }
 
-    // Update sidebar
     document.getElementById("stop-count").textContent = data.stops_found;
     document.getElementById("results-section").style.display = "block";
 
-    const list = document.getElementById("stop-list");
-    list.innerHTML = data.stops.map((stop, i) => `
+    document.getElementById("stop-list").innerHTML = data.stops.map((stop, i) => `
       <div class="stop-item" onclick="flyToStop(${stop.geometry.coordinates[1]}, ${stop.geometry.coordinates[0]})">
         <div class="stop-name">${i + 1}. ${stop.name}</div>
         <div class="stop-dist">🚶 <span>${stop.distance_m}m</span> walking distance</div>
