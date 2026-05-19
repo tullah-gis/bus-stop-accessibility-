@@ -9,187 +9,247 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: sans-serif; display: flex; height: 100vh; }
+
   #sidebar {
-    width: 280px; background: #2c3e50; color: #eee;
+    width: 300px; background: #2c3e50; color: #eee;
     padding: 20px; display: flex; flex-direction: column;
-    gap: 16px; overflow-y: auto;
+    gap: 14px; overflow-y: auto; flex-shrink: 0;
   }
-  #sidebar h1 { font-size: 14px; color: #f1c40f; letter-spacing: 0.1em; text-transform: uppercase; }
-  #sidebar h2 { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+
+  #sidebar h1 { font-size: 13px; color: #f1c40f; letter-spacing: 0.1em; text-transform: uppercase; }
+  #sidebar h2 { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  .input-group label { font-size: 11px; color: #aaa; }
+  .input-group input {
+    padding: 8px 10px; border-radius: 4px;
+    border: 1px solid #4a6274; background: #34495e;
+    color: #eee; font-size: 12px; outline: none;
+    transition: border 0.2s;
+  }
+  .input-group input:focus { border-color: #f1c40f; }
+
+  .radius-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+  .radius-val { color: #f1c40f; font-weight: 700; font-size: 14px; }
+  input[type=range] { width: 100%; accent-color: #f1c40f; margin-top: 4px; }
+
+  .search-btn {
+    padding: 10px; background: #f1c40f; color: #2c3e50;
+    border: none; border-radius: 4px; font-weight: 700;
+    font-size: 13px; cursor: pointer; transition: background 0.2s;
+  }
+  .search-btn:hover { background: #f39c12; }
+  .search-btn:disabled { background: #4a6274; color: #888; cursor: not-allowed; }
+
   .stat-box { background: #34495e; border-radius: 6px; padding: 12px; border: 1px solid #4a6274; }
-  .stat-number { font-size: 32px; font-weight: 700; color: #f1c40f; }
+  .stat-number { font-size: 28px; font-weight: 700; color: #f1c40f; }
   .stat-label { font-size: 11px; color: #aaa; margin-top: 2px; }
-  .district-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #4a6274; font-size: 12px; }
-  .district-row:last-child { border: none; }
-  .district-count { color: #f1c40f; font-weight: 600; }
-  .filter-group { display: flex; flex-wrap: wrap; gap: 6px; }
-  .filter-btn { padding: 5px 10px; border-radius: 4px; border: 1px solid #4a6274; background: transparent; color: #aaa; font-size: 11px; cursor: pointer; transition: all 0.2s; }
-  .filter-btn:hover, .filter-btn.active { border-color: #f1c40f; color: #f1c40f; background: rgba(241,196,15,0.1); }
-  .toggle-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 4px 0; }
-  .toggle { position: relative; width: 36px; height: 20px; }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #4a6274; border-radius: 20px; transition: 0.3s; }
-  .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: #aaa; border-radius: 50%; transition: 0.3s; }
-  input:checked + .slider { background: rgba(241,196,15,0.3); }
-  input:checked + .slider:before { transform: translateX(16px); background: #f1c40f; }
+
+  .stop-list { display: flex; flex-direction: column; gap: 6px; }
+  .stop-item {
+    background: #34495e; border-radius: 4px; padding: 10px;
+    border-left: 3px solid #f1c40f; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .stop-item:hover { background: #3d566e; }
+  .stop-name { font-size: 12px; font-weight: 600; color: #eee; }
+  .stop-dist { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .stop-dist span { color: #2ecc71; font-weight: 600; }
+
   .legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px; }
   .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
   .legend-rect { width: 12px; height: 12px; flex-shrink: 0; }
+
+  .status { font-size: 11px; color: #aaa; text-align: center; padding: 8px; }
+  .status.loading { color: #f1c40f; }
+  .status.error { color: #e74c3c; }
+
   #map { flex: 1; }
 </style>
 </head>
 <body>
+
 <div id="sidebar">
   <h1>Bus Stop Accessibility</h1>
-  <p style="font-size:11px;color:#aaa;">Frankfurt · Bockenheim, Nordend, Westend, Ostend</p>
-
-  <div class="stat-box">
-    <div class="stat-number" id="total-stops">—</div>
-    <div class="stat-label">Bus Stops Total</div>
-  </div>
+  <p style="font-size:11px;color:#aaa;">Network-based walking distance · Frankfurt am Main</p>
 
   <div>
-    <h2>Stops per District</h2>
-    <div id="district-stats"></div>
-  </div>
-
-  <div>
-    <h2>Filter by District</h2>
-    <div class="filter-group" id="filters">
-      <button class="filter-btn active" data-district="all">All</button>
-      <button class="filter-btn" data-district="Bockenheim">Bockenheim</button>
-      <button class="filter-btn" data-district="Nordend-West">Nordend-West</button>
-      <button class="filter-btn" data-district="Nordend-Ost">Nordend-Ost</button>
-      <button class="filter-btn" data-district="Westend-Nord">Westend-Nord</button>
-      <button class="filter-btn" data-district="Westend-Süd">Westend-Süd</button>
-      <button class="filter-btn" data-district="Ostend">Ostend</button>
+    <h2>Search</h2>
+    <div class="input-group">
+      <label>Address in Frankfurt</label>
+      <input type="text" id="address-input" placeholder="e.g. Zeil 1, Frankfurt" value="Zeil 1, Frankfurt"/>
     </div>
   </div>
 
   <div>
-    <h2>Layers</h2>
-    <div class="toggle-row">
-      <span>300m Coverage</span>
-      <label class="toggle"><input type="checkbox" id="toggle-coverage" checked><span class="slider"></span></label>
+    <h2>Walking Radius</h2>
+    <div class="radius-row">
+      <span>Distance</span>
+      <span class="radius-val"><span id="radius-display">300</span>m</span>
     </div>
-    <div class="toggle-row">
-      <span>Coverage Gaps</span>
-      <label class="toggle"><input type="checkbox" id="toggle-gaps" checked><span class="slider"></span></label>
+    <input type="range" id="radius-slider" min="100" max="1000" step="50" value="300"/>
+  </div>
+
+  <button class="search-btn" id="search-btn" onclick="runSearch()">Search Bus Stops</button>
+
+  <div id="status" class="status">Enter an address and click search.</div>
+
+  <div id="results-section" style="display:none;">
+    <div class="stat-box">
+      <div class="stat-number" id="stop-count">0</div>
+      <div class="stat-label">Bus stops within walking distance</div>
+    </div>
+
+    <div>
+      <h2>Stops (sorted by distance)</h2>
+      <div class="stop-list" id="stop-list"></div>
     </div>
   </div>
 
   <div>
     <h2>Legend</h2>
+    <div class="legend-row"><div class="legend-dot" style="background:#3498db"></div> Search Point</div>
     <div class="legend-row"><div class="legend-dot" style="background:#f1c40f"></div> Bus Stop</div>
-    <div class="legend-row"><div class="legend-rect" style="background:rgba(39,174,96,0.4);border:2px solid #27ae60"></div> 300m Coverage</div>
-    <div class="legend-row"><div class="legend-rect" style="background:rgba(231,76,60,0.35);border:1px solid #e74c3c"></div> Coverage Gap</div>
+    <div class="legend-row"><div class="legend-rect" style="background:rgba(39,174,96,0.3);border:2px solid #27ae60"></div> Reachable Area (Isochrone)</div>
   </div>
 </div>
 
 <div id="map"></div>
 
 <script>
-const API = "https://bus-stop-accessibility.onrender.com/api";
+const API = "http://localhost:8000/api";
 
-const map = L.map("map", { center: [50.123, 8.661], zoom: 14 });
-
-// Normaler heller Kartenhintergrund
+const map = L.map("map", { center: [50.1109, 8.6821], zoom: 13 });
 L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-  attribution: "© OpenStreetMap contributors",
-  maxZoom: 19
+  attribution: "© OpenStreetMap contributors © CARTO"
 }).addTo(map);
 
+let searchMarker = null;
 let stopsLayer = null;
-let coverageLayer = null;
-let gapsLayer = null;
+let isochroneLayer = null;
 
-async function loadStops(district = null) {
-  const url = district && district !== "all"
-    ? `${API}/stops?district=${district}`
-    : `${API}/stops`;
-  const res = await fetch(url);
-  const data = await res.json();
-  if (stopsLayer) map.removeLayer(stopsLayer);
-  stopsLayer = L.geoJSON(data, {
-    pointToLayer: (feature, latlng) =>
-      L.circleMarker(latlng, {
-        radius: 7,
-        fillColor: "#f1c40f",
-        color: "#e67e22",
-        weight: 1.5,
-        fillOpacity: 0.9,
-      }),
-    onEachFeature: (feature, layer) => {
-      const p = feature.properties;
-      layer.bindTooltip(
-        `<b>${p.name || "Unnamed Stop"}</b><br>${p.district}`,
-        { sticky: true }
-      );
+// Radius slider
+document.getElementById("radius-slider").addEventListener("input", function() {
+  document.getElementById("radius-display").textContent = this.value;
+});
+
+// Enter key trigger
+document.getElementById("address-input").addEventListener("keypress", function(e) {
+  if (e.key === "Enter") runSearch();
+});
+
+async function runSearch() {
+  const address = document.getElementById("address-input").value.trim();
+  const radius = document.getElementById("radius-slider").value;
+
+  if (!address) return;
+
+  const btn = document.getElementById("search-btn");
+  btn.disabled = true;
+  btn.textContent = "Searching...";
+  setStatus("Calculating network-based accessibility...", "loading");
+  document.getElementById("results-section").style.display = "none";
+
+  try {
+    const res = await fetch(`${API}/search?address=${encodeURIComponent(address)}&radius=${radius}`);
+    const data = await res.json();
+
+    if (data.error) {
+      setStatus(`Error: ${data.error}`, "error");
+      return;
     }
-  }).addTo(map);
-  document.getElementById("total-stops").textContent = data.features.length;
-}
 
-async function loadCoverage() {
-  const res = await fetch(`${API}/coverage?radius=300`);
-  const data = await res.json();
-  if (coverageLayer) map.removeLayer(coverageLayer);
-  coverageLayer = L.geoJSON(data, {
-    style: {
-      fillColor: "#27ae60",
-      fillOpacity: 0.35,
-      color: "#27ae60",
+    // Clear old layers
+    if (searchMarker) map.removeLayer(searchMarker);
+    if (stopsLayer) map.removeLayer(stopsLayer);
+    if (isochroneLayer) map.removeLayer(isochroneLayer);
+
+    // Draw isochrone
+    if (data.isochrone) {
+      isochroneLayer = L.geoJSON(data.isochrone, {
+        style: {
+          fillColor: "#27ae60",
+          fillOpacity: 0.2,
+          color: "#27ae60",
+          weight: 2,
+        }
+      }).addTo(map);
+    }
+
+    // Draw search point
+    searchMarker = L.circleMarker([data.search_point.lat, data.search_point.lon], {
+      radius: 10,
+      fillColor: "#3498db",
+      color: "#fff",
       weight: 2,
+      fillOpacity: 1,
+    }).addTo(map);
+    searchMarker.bindPopup(`<b>Search point</b><br>${address}`).openPopup();
+
+    // Draw bus stops
+    const features = data.stops.map(stop => ({
+      type: "Feature",
+      geometry: stop.geometry,
+      properties: { name: stop.name, distance_m: stop.distance_m }
+    }));
+
+    stopsLayer = L.geoJSON({ type: "FeatureCollection", features }, {
+      pointToLayer: (feature, latlng) =>
+        L.circleMarker(latlng, {
+          radius: 7,
+          fillColor: "#f1c40f",
+          color: "#e67e22",
+          weight: 1.5,
+          fillOpacity: 0.9,
+        }),
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties;
+        layer.bindTooltip(
+          `<b>${p.name}</b><br>🚶 ${p.distance_m}m walking`,
+          { sticky: true }
+        );
+      }
+    }).addTo(map);
+
+    // Fit map to results
+    if (data.stops.length > 0) {
+      const bounds = stopsLayer.getBounds().extend(searchMarker.getLatLng());
+      map.fitBounds(bounds, { padding: [40, 40] });
+    } else {
+      map.setView([data.search_point.lat, data.search_point.lon], 15);
     }
-  }).addTo(map);
-  if (stopsLayer) stopsLayer.bringToFront();
+
+    // Update sidebar
+    document.getElementById("stop-count").textContent = data.stops_found;
+    document.getElementById("results-section").style.display = "block";
+
+    const list = document.getElementById("stop-list");
+    list.innerHTML = data.stops.map((stop, i) => `
+      <div class="stop-item" onclick="flyToStop(${stop.geometry.coordinates[1]}, ${stop.geometry.coordinates[0]})">
+        <div class="stop-name">${i + 1}. ${stop.name}</div>
+        <div class="stop-dist">🚶 <span>${stop.distance_m}m</span> walking distance</div>
+      </div>
+    `).join("");
+
+    setStatus(`Found ${data.stops_found} stops within ${radius}m walking distance.`);
+
+  } catch (err) {
+    setStatus(`Network error: ${err.message}`, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Search Bus Stops";
+  }
 }
 
-async function loadGaps() {
-  const res = await fetch(`${API}/gaps?radius=300`);
-  const data = await res.json();
-  if (gapsLayer) map.removeLayer(gapsLayer);
-  if (!data.geometry) return;
-  gapsLayer = L.geoJSON(data, {
-    style: {
-      fillColor: "#e74c3c",
-      fillOpacity: 0.35,
-      color: "#e74c3c",
-      weight: 1,
-    }
-  }).addTo(map);
-  if (stopsLayer) stopsLayer.bringToFront();
+function flyToStop(lat, lon) {
+  map.flyTo([lat, lon], 17, { duration: 1 });
 }
 
-async function loadStats() {
-  const res = await fetch(`${API}/stats`);
-  const data = await res.json();
-  document.getElementById("district-stats").innerHTML = data.map(d => `
-    <div class="district-row">
-      <span>${d.district}</span>
-      <span class="district-count">${d.stop_count}</span>
-    </div>`).join("");
+function setStatus(msg, type = "") {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.className = "status " + type;
 }
-
-document.getElementById("toggle-coverage").addEventListener("change", e => {
-  e.target.checked ? coverageLayer && map.addLayer(coverageLayer) : coverageLayer && map.removeLayer(coverageLayer);
-});
-document.getElementById("toggle-gaps").addEventListener("change", e => {
-  e.target.checked ? gapsLayer && map.addLayer(gapsLayer) : gapsLayer && map.removeLayer(gapsLayer);
-});
-
-document.querySelectorAll(".filter-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    loadStops(btn.dataset.district);
-  });
-});
-
-loadStops();
-loadCoverage();
-loadGaps();
-loadStats();
 </script>
 </body>
 </html>

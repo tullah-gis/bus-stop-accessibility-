@@ -9,3 +9,5 @@ shapely
 pandas
 python-dotenv
 aiofiles
+networkx
+requests
