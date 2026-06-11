@@ -11,82 +11,94 @@
   body { font-family: sans-serif; display: flex; height: 100vh; }
 
   #sidebar {
-    width: 300px; background: #2c3e50; color: #eee;
+    width: 300px; background: #f8f9fa; color: #1f2937;
     padding: 20px; display: flex; flex-direction: column;
     gap: 14px; overflow-y: auto; flex-shrink: 0;
+    border-right: 1px solid #e5e7eb;
   }
 
-  #sidebar h1 { font-size: 13px; color: #f1c40f; letter-spacing: 0.1em; text-transform: uppercase; }
-  #sidebar h2 { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  #sidebar h1 { font-size: 16px; color: #1558d6; letter-spacing: 0.1em; text-transform: uppercase; }
+  #sidebar h2 { font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
 
   .input-group { display: flex; flex-direction: column; gap: 6px; position: relative; }
-  .input-group label { font-size: 11px; color: #aaa; }
+  .input-group label { font-size: 13px; color: #6b7280; }
   .input-group input {
     padding: 8px 10px; border-radius: 4px;
-    border: 1px solid #4a6274; background: #34495e;
-    color: #eee; font-size: 12px; outline: none;
+    border: 1px solid #d1d5db; background: #ffffff;
+    color: #1f2937; font-size: 14px; outline: none;
     transition: border 0.2s;
   }
-  .input-group input:focus { border-color: #f1c40f; }
+  .input-group input:focus { border-color: #1558d6; box-shadow: 0 0 0 2px rgba(66,133,244,0.15); }
 
   /* Autocomplete dropdown */
   #autocomplete-list {
     position: absolute;
     top: 100%;
     left: 0; right: 0;
-    background: #34495e;
-    border: 1px solid #f1c40f;
+    background: #ffffff;
+    border: 1px solid #1558d6;
     border-top: none;
     border-radius: 0 0 4px 4px;
     z-index: 9999;
     max-height: 200px;
     overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
   }
   .autocomplete-item {
     padding: 8px 10px;
-    font-size: 11px;
-    color: #eee;
+    font-size: 13px;
+    color: #1f2937;
     cursor: pointer;
-    border-bottom: 1px solid #4a6274;
+    border-bottom: 1px solid #e5e7eb;
     line-height: 1.4;
   }
   .autocomplete-item:last-child { border-bottom: none; }
-  .autocomplete-item:hover { background: #3d566e; color: #f1c40f; }
+  .autocomplete-item:hover { background: #eff6ff; color: #1558d6; }
 
-  .radius-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
-  .radius-val { color: #f1c40f; font-weight: 700; font-size: 14px; }
-  input[type=range] { width: 100%; accent-color: #f1c40f; margin-top: 4px; }
+  .radius-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+  .radius-val { color: #1558d6; font-weight: 700; font-size: 16px; }
+  input[type=range] { width: 100%; accent-color: #1558d6; margin-top: 4px; }
 
   .search-btn {
-    padding: 10px; background: #f1c40f; color: #2c3e50;
+    padding: 10px; background: #1558d6; color: #ffffff;
     border: none; border-radius: 4px; font-weight: 700;
-    font-size: 13px; cursor: pointer; transition: background 0.2s;
+    font-size: 15px; cursor: pointer; transition: background 0.2s;
   }
-  .search-btn:hover { background: #f39c12; }
-  .search-btn:disabled { background: #4a6274; color: #888; cursor: not-allowed; }
+  .search-btn:hover { background: #3574e2; }
+  .search-btn:disabled { background: #d1d5db; color: #9ca3af; cursor: not-allowed; }
 
-  .stat-box { background: #34495e; border-radius: 6px; padding: 12px; border: 1px solid #4a6274; }
-  .stat-number { font-size: 28px; font-weight: 700; color: #f1c40f; }
-  .stat-label { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .stat-box { background: #ffffff; border-radius: 6px; padding: 12px; border: 1px solid #e5e7eb; }
+  .stat-number { font-size: 32px; font-weight: 700; color: #1558d6; }
+  .stat-label { font-size: 13px; color: #6b7280; margin-top: 2px; }
 
   .stop-list { display: flex; flex-direction: column; gap: 6px; }
   .stop-item {
-    background: #34495e; border-radius: 4px; padding: 10px;
-    border-left: 3px solid #f1c40f; cursor: pointer;
-    transition: background 0.2s;
+    background: #ffffff; border-radius: 4px; padding: 10px;
+    border-left: 3px solid #1558d6; cursor: pointer;
+    transition: background 0.2s; border-top: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb;
   }
-  .stop-item:hover { background: #3d566e; }
-  .stop-name { font-size: 12px; font-weight: 600; color: #eee; }
-  .stop-dist { font-size: 11px; color: #aaa; margin-top: 2px; }
-  .stop-dist span { color: #2ecc71; font-weight: 600; }
+  .stop-item:hover { background: #eff6ff; }
+  .stop-name { font-size: 14px; font-weight: 600; color: #1f2937; }
+  .stop-dist { font-size: 13px; color: #6b7280; margin-top: 2px; }
+  .stop-dist span { color: #16a34a; font-weight: 600; }
 
-  .legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px; }
+  .legend-row { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 6px; color: #374151; }
   .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
   .legend-rect { width: 12px; height: 12px; flex-shrink: 0; }
 
-  .status { font-size: 11px; color: #aaa; text-align: center; padding: 8px; }
-  .status.loading { color: #f1c40f; }
+  .status { font-size: 13px; color: #6b7280; text-align: center; padding: 8px; }
+  .status.loading { color: #1558d6; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .status.error { color: #e74c3c; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid #d1d5db;
+    border-top-color: #1558d6;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
 
   #map { flex: 1; }
 </style>
@@ -95,7 +107,7 @@
 
 <div id="sidebar">
   <h1>Bus Stop Accessibility</h1>
-  <p style="font-size:11px;color:#aaa;">Network-based walking distance · Frankfurt am Main only</p>
+  <p style="font-size:13px;color:#6b7280;">Network-based walking distance · Frankfurt am Main only</p>
 
   <div>
     <h2>Search</h2>
@@ -137,7 +149,7 @@
     <h2>Legend</h2>
     <div class="legend-row"><div class="legend-dot" style="background:#3498db"></div> Search Point</div>
     <div class="legend-row"><div class="legend-dot" style="background:#f1c40f"></div> Bus Stop</div>
-    <div class="legend-row"><div class="legend-rect" style="background:rgba(39,174,96,0.3);border:2px solid #27ae60"></div> Reachable Area (Isochrone)</div>
+    <div class="legend-row"><div class="legend-rect" style="background:rgba(66,133,244,0.15);border:2px dashed #1558d6"></div> Walking Radius</div>
   </div>
 </div>
 
@@ -264,11 +276,13 @@ async function runSearch() {
     if (stopsLayer) map.removeLayer(stopsLayer);
     if (isochroneLayer) map.removeLayer(isochroneLayer);
 
-    if (data.isochrone) {
-      isochroneLayer = L.geoJSON(data.isochrone, {
-        style: { fillColor: "#27ae60", fillOpacity: 0.2, color: "#27ae60", weight: 2 }
-      }).addTo(map);
-    }
+    isochroneLayer = L.circle([data.search_point.lat, data.search_point.lon], {
+      radius: data.radius_m,
+      fillColor: "#1558d6",
+      fillOpacity: 0.15,
+      color: "#1558d6",
+      weight: 2,
+    }).addTo(map);
 
     searchMarker = L.circleMarker([data.search_point.lat, data.search_point.lon], {
       radius: 10, fillColor: "#3498db", color: "#fff", weight: 2, fillOpacity: 1,
@@ -293,11 +307,7 @@ async function runSearch() {
       }
     }).addTo(map);
 
-    if (data.stops.length > 0) {
-      map.fitBounds(stopsLayer.getBounds().extend(searchMarker.getLatLng()), { padding: [40, 40] });
-    } else {
-      map.setView([data.search_point.lat, data.search_point.lon], 15);
-    }
+    map.fitBounds(isochroneLayer.getBounds(), { padding: [40, 40] });
 
     document.getElementById("stop-count").textContent = data.stops_found;
     document.getElementById("results-section").style.display = "block";
@@ -325,8 +335,12 @@ function flyToStop(lat, lon) {
 
 function setStatus(msg, type = "") {
   const el = document.getElementById("status");
-  el.textContent = msg;
   el.className = "status " + type;
+  if (type === "loading") {
+    el.innerHTML = `<div class="spinner"></div><span>${msg}</span>`;
+  } else {
+    el.textContent = msg;
+  }
 }
 </script>
 </body>
